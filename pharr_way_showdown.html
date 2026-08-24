@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pharr Way Showdown — Process Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  /* City of Pharr palette */
+  --navy-deep:#0D1D41;
+  --navy-2:#0f1d44;
+  --navy-3:#1c3968;
+  --navy-4:#002a5a;
+  --blue-mid:#3d81c3;
+  --blue-steel:#6a98c6;
+  --blue-sky:#2faae1;
+  --blue-ice:#81d2e8;
+  --royal:#0010e4;
+  --olive:#9bc13c;
+  --slate:#3f4144;
+  --grey:#9d9fa2;
+  --gold:#f3c300;
+  --gold-2:#f2c127;
+  --gold-3:#f9be29;
+  --yellow:#fede00;
+  --cream:#fdfbe3;
+  --white:#ffffff;
+  --correct:#9bc13c;
+  --wrong:#ff3b3b;
+  --shadow:0 4px 24px rgba(0,0,50,0.7);
+}
+html,body{height:100%;font-family:'Barlow',sans-serif;background:var(--navy-deep);color:var(--white);overflow:hidden;}
+
+.screen{display:none;position:fixed;inset:0;z-index:10;overflow-y:auto;}
+.screen.active{display:flex;flex-direction:column;align-items:center;}
+
+#screen-intro{
+  justify-content:center;
+  background:radial-gradient(ellipse at 50% 30%,#12227a,#081046 60%,#050a30);
+  padding:1.5rem;gap:1.5rem;
+}
+.intro-logo{text-align:center;}
+.intro-logo .eyebrow{font-size:.8rem;letter-spacing:.3em;color:var(--grey);margin-bottom:.3rem;}
+.intro-logo h1{
+  font-family:'Anton',sans-serif;
+  font-size:clamp(4rem,13vw,8rem);
+  letter-spacing:.05em;
+  color:var(--gold);
+  text-shadow:0 0 40px rgba(243,195,0,.45),4px 4px 0 rgba(0,0,60,.8);
+  line-height:.95;
+}
+.intro-logo h2{
+  font-family:'Anton',sans-serif;
+  font-size:clamp(1rem,2.5vw,1.5rem);
+  letter-spacing:.25em;
+  color:var(--blue-ice);
+  margin-top:.4rem;
+  text-shadow:0 0 15px rgba(129,210,232,.3);
+}
+.intro-logo h3{
+  font-family:'Barlow',sans-serif;
+  font-weight:700;
+  font-size:.85rem;
+  letter-spacing:.2em;
+  color:var(--gold-3);
+  margin-top:.6rem;
+}
+.setup-box{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:16px;
+  padding:1.8rem;
+  width:100%;max-width:520px;
+  backdrop-filter:blur(8px);
+}
+.setup-box h3{
+  font-family:'Anton',sans-serif;
+  font-size:1.4rem;letter-spacing:.1em;
+  color:var(--gold);margin-bottom:1.2rem;
+}
+.teams-grid{display:flex;flex-direction:column;gap:.55rem;margin-bottom:.9rem;}
+.team-row{display:flex;align-items:center;gap:.5rem;}
+.t-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,.4);}
+.t-input{
+  flex:1;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);
+  border-radius:8px;padding:.55rem .8rem;
+  color:var(--white);font-family:'Barlow',sans-serif;font-size:1rem;font-weight:600;
+  letter-spacing:.04em;outline:none;transition:border-color .2s;
+}
+.t-input:focus{border-color:var(--gold);}
+.t-remove{background:none;border:none;cursor:pointer;color:var(--grey);font-size:1.1rem;padding:.2rem .4rem;transition:color .2s;line-height:1;}
+.t-remove:hover{color:var(--wrong);}
+.btn-addteam{
+  width:100%;background:none;border:1px dashed rgba(255,255,255,.2);border-radius:8px;
+  padding:.55rem 1rem;color:var(--grey);font-family:'Barlow',sans-serif;
+  font-size:.95rem;font-weight:600;letter-spacing:.05em;cursor:pointer;
+  transition:all .2s;margin-bottom:1.4rem;
+}
+.btn-addteam:hover:not(:disabled){border-color:var(--gold);color:var(--gold);}
+.btn-addteam:disabled{opacity:.3;cursor:not-allowed;}
+.btn-play{
+  width:100%;background:linear-gradient(135deg,var(--gold),var(--gold-3));
+  border:none;border-radius:12px;padding:1rem;
+  color:#1a0800;font-family:'Anton',sans-serif;font-size:2rem;letter-spacing:.15em;
+  cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(243,195,0,.4);
+}
+.btn-play:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(243,195,0,.6);}
+.btn-play:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+
+#screen-game{
+  background:radial-gradient(ellipse at 50% 0%,#0f1a70,#081046 50%,#04081f);
+  padding:0;justify-content:flex-start;
+}
+.game-header{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  padding:.5rem 1rem;background:rgba(0,0,0,.35);border-bottom:2px solid rgba(243,195,0,.25);
+  flex-shrink:0;gap:.5rem;flex-wrap:wrap;
+}
+.game-title{font-family:'Anton',sans-serif;font-size:1.2rem;letter-spacing:.12em;color:var(--gold);white-space:nowrap;}
+.scoreboard{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;flex:1;}
+.s-chip{
+  display:flex;align-items:center;gap:.35rem;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);
+  border-radius:20px;padding:.2rem .7rem;font-size:.85rem;font-weight:700;
+  letter-spacing:.04em;white-space:nowrap;transition:all .3s;color:var(--white);
+}
+.s-dot{width:9px;height:9px;border-radius:50%;border:1px solid rgba(255,255,255,.4);}
+
+.board-wrap{
+  flex:1;display:flex;flex-direction:column;
+  width:100%;padding:.6rem .8rem .4rem;min-height:0;overflow:hidden;
+}
+.board{
+  display:grid;grid-template-columns:repeat(6,1fr);
+  gap:.35rem;flex:1;min-height:0;
+}
+.cat-header{
+  background:linear-gradient(180deg,var(--navy-3),var(--navy-4));
+  border:2px solid rgba(255,255,255,.18);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  text-align:center;padding:.4rem .3rem;
+  font-family:'Anton',sans-serif;font-size:clamp(.55rem,1.1vw,.8rem);
+  letter-spacing:.05em;color:var(--white);
+  text-shadow:1px 1px 3px rgba(0,0,60,.8);
+  line-height:1.2;
+}
+.tile{
+  background:linear-gradient(160deg,var(--navy-3),var(--navy-2));
+  border:2px solid rgba(255,255,255,.15);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .18s;
+  position:relative;overflow:hidden;
+}
+.tile::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.08),transparent);
+  pointer-events:none;
+}
+.tile:hover:not(.used){
+  background:linear-gradient(160deg,var(--blue-mid),var(--navy-3));
+  transform:scale(1.03);box-shadow:0 4px 20px rgba(243,195,0,.3);
+  border-color:rgba(243,195,0,.5);
+}
+.tile.used{
+  background:rgba(0,0,50,.4);border-color:rgba(255,255,255,.06);
+  cursor:default;transform:none;box-shadow:none;
+}
+.tile-val{
+  font-family:'Anton',sans-serif;
+  font-size:clamp(1.1rem,2.5vw,2rem);
+  color:var(--gold);
+  text-shadow:2px 2px 4px rgba(0,0,60,.9);
+}
+.tile.used .tile-val{opacity:0;}
+
+.modal-bg{
+  display:none;position:fixed;inset:0;z-index:60;
+  background:rgba(2,4,30,.88);
+  align-items:center;justify-content:center;padding:1rem;
+  animation:fadeIn .2s ease;
+}
+.modal-bg.active{display:flex;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+.modal{
+  background:linear-gradient(160deg,var(--navy-4),var(--navy-deep));
+  border:3px solid var(--gold);border-radius:18px;
+  padding:2rem;width:100%;max-width:680px;
+  position:relative;box-shadow:0 0 60px rgba(243,195,0,.25),var(--shadow);
+  animation:modalPop .35s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes modalPop{from{transform:scale(.85);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+.modal-cat{
+  font-size:.75rem;letter-spacing:.25em;color:var(--gold);
+  font-weight:700;margin-bottom:.5rem;text-transform:uppercase;
+}
+.modal-pts{
+  font-family:'Anton',sans-serif;font-size:2.5rem;color:var(--gold);
+  text-shadow:0 0 20px rgba(243,195,0,.5);margin-bottom:1.2rem;line-height:1;
+}
+.modal-meta{
+  font-size:.75rem;letter-spacing:.05em;color:var(--grey);
+  margin-bottom:.9rem;font-weight:600;
+}
+.modal-q{
+  font-size:clamp(1.1rem,2.5vw,1.45rem);font-weight:600;line-height:1.5;
+  color:var(--white);margin-bottom:1.5rem;min-height:3rem;
+}
+.modal-answer-box{
+  display:none;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);
+  border-radius:12px;padding:1rem 1.3rem;margin-bottom:1.3rem;
+}
+.modal-answer-box.active{display:block;}
+.answer-label{font-size:.7rem;letter-spacing:.2em;color:var(--grey);margin-bottom:.3rem;font-weight:700;}
+.answer-text{font-size:1.1rem;font-weight:600;color:var(--gold);line-height:1.4;}
+
+.modal-actions{display:flex;flex-direction:column;gap:.8rem;}
+.reveal-btn{
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:10px;
+  padding:.75rem;color:var(--white);font-family:'Barlow',sans-serif;font-size:1rem;font-weight:700;
+  letter-spacing:.06em;cursor:pointer;transition:all .2s;width:100%;
+}
+.reveal-btn:hover{background:rgba(255,255,255,.18);border-color:var(--gold);}
+
+.award-section{display:none;gap:.5rem;flex-direction:column;}
+.award-section.active{display:flex;}
+.award-label{font-size:.75rem;letter-spacing:.15em;color:var(--grey);font-weight:700;text-align:center;}
+.award-buttons{display:flex;gap:.4rem;flex-wrap:wrap;justify-content:center;}
+.btn-award{
+  padding:.55rem 1rem;border:2px solid;border-radius:10px;
+  font-family:'Barlow',sans-serif;font-size:.9rem;font-weight:700;letter-spacing:.04em;
+  cursor:pointer;transition:all .18s;background:rgba(255,255,255,.05);
+}
+.btn-award.correct:hover{transform:translateY(-2px);}
+.btn-award.wrong{border-color:var(--wrong);color:var(--wrong);background:rgba(255,59,59,.08);}
+.btn-award.wrong:hover{background:rgba(255,59,59,.2);transform:translateY(-2px);}
+.btn-noaward{
+  width:100%;background:none;border:1px solid rgba(255,255,255,.12);border-radius:8px;
+  padding:.5rem;color:var(--grey);font-family:'Barlow',sans-serif;font-size:.85rem;
+  font-weight:600;letter-spacing:.05em;cursor:pointer;transition:all .2s;
+}
+.btn-noaward:hover{color:var(--white);border-color:rgba(255,255,255,.3);}
+
+/* Lightning intro */
+#screen-lightning{
+  background:radial-gradient(ellipse at 50% 20%,#241a00,#081046 55%,#04081f);
+  justify-content:center;padding:2rem;gap:1.2rem;text-align:center;
+}
+#screen-lightning h2{
+  font-family:'Anton',sans-serif;font-size:clamp(2rem,6vw,3.2rem);
+  letter-spacing:.1em;color:var(--gold);text-shadow:0 0 30px rgba(243,195,0,.5);
+}
+#screen-lightning p{color:var(--blue-ice);max-width:480px;font-size:.95rem;line-height:1.6;}
+.btn-lightning{
+  background:linear-gradient(135deg,var(--royal),var(--blue-sky));
+  border:none;border-radius:12px;padding:1rem 2.2rem;
+  color:#fff;font-family:'Anton',sans-serif;font-size:1.6rem;letter-spacing:.12em;
+  cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(0,16,228,.4);
+}
+.btn-lightning:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,16,228,.55);}
+
+#screen-final{
+  background:radial-gradient(ellipse at 50% 20%,#241a00,#0f1a70 50%,#04081f);
+  justify-content:center;padding:2rem;gap:1.4rem;
+}
+.final-title{
+  font-family:'Anton',sans-serif;font-size:clamp(2.5rem,9vw,5rem);
+  letter-spacing:.1em;color:var(--gold);
+  text-shadow:0 0 40px rgba(243,195,0,.5);text-align:center;
+}
+.final-sub{font-size:.85rem;letter-spacing:.15em;color:var(--grey);text-align:center;margin-top:-.8rem;}
+.podium{display:flex;flex-direction:column;gap:.6rem;width:100%;max-width:480px;}
+.p-row{
+  display:flex;align-items:center;gap:1rem;padding:1rem 1.3rem;
+  border-radius:12px;border:1px solid;
+  animation:slideIn .5s ease both;
+}
+@keyframes slideIn{from{transform:translateX(-40px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.p-row.r1{background:rgba(243,195,0,.12);border-color:rgba(243,195,0,.4);}
+.p-row.r2{background:rgba(157,159,162,.1);border-color:rgba(157,159,162,.3);}
+.p-row.r3{background:rgba(154,90,30,.1);border-color:rgba(154,90,30,.3);}
+.p-row.rx{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.07);}
+.p-medal{font-size:1.7rem;width:2rem;text-align:center;}
+.p-name{flex:1;font-family:'Anton',sans-serif;font-size:1.4rem;letter-spacing:.08em;}
+.p-score{font-family:'Anton',sans-serif;font-size:1.9rem;letter-spacing:.04em;}
+.p-pts{font-size:.75rem;letter-spacing:.1em;color:var(--grey);align-self:flex-end;margin-bottom:.2rem;}
+.final-actions{display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;}
+.btn-restart, .btn-review{
+  border:none;border-radius:12px;
+  padding:.85rem 2rem;color:#fff;font-family:'Anton',sans-serif;
+  font-size:1.25rem;letter-spacing:.12em;cursor:pointer;transition:all .2s;
+}
+.btn-restart{background:linear-gradient(135deg,var(--blue-sky),var(--blue-mid));box-shadow:0 4px 20px rgba(47,170,225,.35);}
+.btn-restart:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(47,170,225,.5);}
+.btn-review{background:linear-gradient(135deg,var(--olive),#7a9e2e);box-shadow:0 4px 20px rgba(155,193,60,.35);}
+.btn-review:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(155,193,60,.5);}
+
+/* Review screen */
+#screen-review{
+  background:radial-gradient(ellipse at 50% 0%,#0f1a70,#04081f 60%);
+  padding:2rem 1rem 3rem;gap:1.6rem;
+}
+.review-title{
+  font-family:'Anton',sans-serif;font-size:clamp(1.8rem,5vw,2.6rem);
+  letter-spacing:.08em;color:var(--gold);text-align:center;
+}
+.review-sub{font-size:.8rem;letter-spacing:.1em;color:var(--grey);text-align:center;margin-top:-1rem;}
+.review-grid{
+  width:100%;max-width:900px;display:flex;flex-direction:column;gap:1rem;
+}
+.team-review-card{
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);
+  border-radius:14px;padding:1.1rem 1.3rem;border-left-width:5px;border-left-style:solid;
+}
+.tr-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.7rem;}
+.tr-name{font-family:'Anton',sans-serif;font-size:1.3rem;letter-spacing:.06em;}
+.tr-score{font-family:'Anton',sans-serif;font-size:1.1rem;color:var(--grey);}
+.tr-acc{font-size:.75rem;letter-spacing:.05em;color:var(--grey);font-weight:600;}
+.cat-bars{display:flex;flex-direction:column;gap:.4rem;margin-bottom:.7rem;}
+.cat-bar-row{display:flex;align-items:center;gap:.5rem;font-size:.72rem;}
+.cat-bar-label{width:150px;flex-shrink:0;color:var(--blue-ice);font-weight:600;letter-spacing:.02em;}
+.cat-bar-track{flex:1;height:9px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden;position:relative;}
+.cat-bar-fill{height:100%;border-radius:6px;transition:width .6s ease;}
+.cat-bar-fill.none{background:repeating-linear-gradient(45deg,rgba(255,255,255,.06),rgba(255,255,255,.06) 4px,transparent 4px,transparent 8px);}
+.cat-bar-count{width:44px;flex-shrink:0;text-align:right;color:var(--grey);font-weight:600;}
+.tr-reco{
+  font-size:.85rem;line-height:1.5;color:var(--cream);
+  background:rgba(0,0,0,.18);border-left:3px solid var(--gold);
+  border-radius:6px;padding:.6rem .8rem;font-weight:500;
+}
+.tr-reco b{color:var(--gold);}
+.citywide-card{
+  background:rgba(255,255,255,.05);border:1px solid rgba(243,195,0,.25);
+  border-radius:14px;padding:1.1rem 1.3rem;max-width:900px;width:100%;
+}
+.citywide-card h3{
+  font-family:'Anton',sans-serif;font-size:1.1rem;letter-spacing:.08em;color:var(--gold);margin-bottom:.6rem;
+}
+.citywide-card p{font-size:.85rem;line-height:1.6;color:var(--cream);}
+.citywide-card p + p{margin-top:.4rem;}
+.review-actions{display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;margin-top:.4rem;}
+
+.cp{position:fixed;border-radius:2px;pointer-events:none;z-index:999;animation:fall var(--d) ease-in forwards;}
+@keyframes fall{0%{transform:translateY(-10px) rotate(0deg);opacity:1;}100%{transform:translateY(100vh) rotate(720deg);opacity:0;}}
+
+.flash{display:none;position:fixed;inset:0;z-index:200;pointer-events:none;}
+.flash.active{display:block;}
+.flash.green{animation:flashG .5s ease-out forwards;}
+.flash.red{animation:flashR .5s ease-out forwards;}
+@keyframes flashG{0%{background:rgba(155,193,60,.24);}100%{background:transparent;}}
+@keyframes flashR{0%{background:rgba(255,59,59,.22);}100%{background:transparent;}}
+
+@media (prefers-reduced-motion: reduce){
+  .p-row,.tile,.cat-bar-fill{transition:none;animation:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="flash" id="flash"></div>
+
+<div id="screen-intro" class="screen active">
+  <div class="intro-logo">
+    <div class="eyebrow">CITY OF PHARR · OFFICE OF STRATEGIC EXCELLENCE</div>
+    <h1>PHARR<br>WAY</h1>
+    <h2>SHOWDOWN</h2>
+    <h3>PROCESS EDITION · TEAM PHARR TUESDAY</h3>
+  </div>
+  <div class="setup-box">
+    <h3>👥 SET UP YOUR TEAMS</h3>
+    <div class="teams-grid" id="teams-grid"></div>
+    <button class="btn-addteam" id="btn-addteam" onclick="addTeam()">+ ADD TEAM (max 6)</button>
+    <button class="btn-play" id="btn-play" onclick="startGame()">LET'S PLAY!</button>
+  </div>
+</div>
+
+<div id="screen-game" class="screen">
+  <div class="game-header">
+    <div class="game-title">PHARR WAY SHOWDOWN · PROCESS EDITION</div>
+    <div class="scoreboard" id="scoreboard"></div>
+  </div>
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <div class="modal-cat" id="modal-cat">CATEGORY</div>
+    <div class="modal-pts" id="modal-pts">$200</div>
+    <div class="modal-meta" id="modal-meta"></div>
+    <div class="modal-q" id="modal-q">Question text here.</div>
+    <div class="modal-answer-box" id="modal-answer-box">
+      <div class="answer-label">✅ ANSWER</div>
+      <div class="answer-text" id="modal-answer-text">—</div>
+    </div>
+    <div class="modal-actions">
+      <button class="reveal-btn" id="reveal-btn" onclick="revealAnswer()">👁 REVEAL ANSWER</button>
+      <div class="award-section" id="award-section">
+        <div class="award-label" id="award-label">AWARD POINTS TO…</div>
+        <div class="award-buttons" id="award-buttons"></div>
+        <button class="btn-noaward" id="btn-noaward" onclick="closeModal(false)">No award — close question</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="screen-lightning" class="screen">
+  <h2>⚡ LIGHTNING FINAL ROUND ⚡</h2>
+  <p>5 clues, open to every team. Any team may buzz in. Correct answers earn double points (+200). Incorrect answers lose nothing — keep the energy high for the close.</p>
+  <button class="btn-lightning" onclick="startLightning()">BEGIN LIGHTNING ROUND</button>
+</div>
+
+<div id="screen-final" class="screen">
+  <div class="final-title">🏆 FINAL SCORES 🏆</div>
+  <div class="final-sub">PHARR WAY SHOWDOWN · PROCESS EDITION · TEAM PHARR TUESDAY</div>
+  <div class="podium" id="podium"></div>
+  <div class="final-actions">
+    <button class="btn-review" onclick="showReview()">📊 VIEW TEAM REVIEW</button>
+    <button class="btn-restart" onclick="restartGame()">PLAY AGAIN 🎮</button>
+  </div>
+</div>
+
+<div id="screen-review" class="screen">
+  <div class="review-title">📊 PERFORMANCE REVIEW</div>
+  <div class="review-sub">WHAT EACH TEAM NAILED — AND WHERE TO FOCUS NEXT</div>
+  <div class="review-grid" id="review-grid"></div>
+  <div class="citywide-card" id="citywide-card"></div>
+  <div class="review-actions">
+    <button class="btn-restart" onclick="showScreen('screen-final')">← BACK TO SCORES</button>
+    <button class="btn-review" onclick="restartGame()">PLAY AGAIN 🎮</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// QUESTION BANK — Process Edition · Team Pharr Tuesday (Finalized Set)
+// 6 categories × 5 process-focused clues, plain-language, single fact per clue.
+// Sourced from the 2026 Official City of Pharr Baldrige Award Application.
+// ═══════════════════════════════════════════
+const CATEGORIES_SRC = [
+  {
+    name: "LEADERSHIP LINGO",
+    qs: [
+      { q: "These three things anchor how Team Pharr leads and shapes organizational culture.", a: "Mission, Vision, and Values.", src: "Leadership Process — LP 1.1" },
+      { q: "This 5-step system keeps senior leaders aligned on setting direction, communicating, modeling expectations, and reinforcing accountability.", a: "The Leadership System (LS).", src: "Leadership Process — LP 1.1" },
+      { q: "How many steps are in the City's leadership succession planning process?", a: "Seven (7).", src: "Leadership Process — LP 2.2" },
+      { q: "Ready now? Maybe in 1\u20133 years? How about 3\u20135? This tool helps Team Pharr identify its future leaders.", a: "The Skills Matrix.", src: "Leadership Process — LP 2.2" },
+      { q: "This 7-step process identifies critical roles, prepares future leaders, and keeps leadership continuity on track.", a: "The Succession Planning Process.", src: "Leadership Process — LP 2.2" },
+    ]
+  },
+  {
+    name: "STRATEGY & SYSTEMS",
+    qs: [
+      { q: "From assessing where we are to monitoring where we're going, this 7-step process keeps Team Pharr's strategy from becoming a plan that just sits on a shelf.", a: "The Strategic Planning Process (SPP).", src: "Strategy Process — SP 1.1" },
+      { q: "No silos here! This framework connects leadership, strategy, workforce, and operations across all 27 departments.", a: "Align Team Pharr (ATP).", src: "Strategy Process — SP 1.1" },
+      { q: "Employees get a seat at the strategy table during these two sessions focused on assessing the department and setting meaningful goals.", a: "SWOT and SMART Days.", src: "Strategy Process — SP 1.2" },
+      { q: "New technology? AI? Not so fast! This process helps the City evaluate new technology before adopting it.", a: "The Innovation and Technology Assessment Process.", src: "Strategy Process — SP 2.1" },
+      { q: "Every month, OSE sends these out to recognize wins and flag areas to improve \u2014 departments look forward to (or dread) this one.", a: "Strengths and Opportunities (S&O) Reports.", src: "Strategy Process — SP 3.1" },
+    ]
+  },
+  {
+    name: "CUSTOMER CONNECTIONS",
+    qs: [
+      { q: "What 3-part process does the City use to listen to, learn from, and act on resident feedback?", a: "Listen, Learn, and Act.", src: "Customer Process — CP 1.1" },
+      { q: "The key to a healthy relationship with residents? This 6-step cycle: Connect, Understand, Engage, Deliver, Measure, Improve.", a: "The Customer Engagement and Relationship Management Process.", src: "Customer Process — CP 1.1" },
+      { q: "Press one for consistent \u2014 this committee standardized customer service across departments, including the Pharr Communication Script.", a: "The Pharr FIRST Customer Service Committee.", src: "Customer Process — CP 1.2" },
+      { q: "Yes, we have receipts! This system time-stamps resident complaints and maintains a full audit trail across 70 service/work order types.", a: "Pharr 311.", src: "Customer Process — CP 2.1" },
+      { q: "Resident feedback is great, but what do we actually do with it? This process identifies, prioritizes, and turns resident feedback into service requirements.", a: "The Customer Requirements Determination Process.", src: "Customer Process — CP 2.2" },
+    ]
+  },
+  {
+    name: "SHOW ME THE DATA!",
+    qs: [
+      { q: "When it comes to performance, department leaders are responsible for regularly reporting and monitoring these key measures.", a: "Key Performance Indicators (KPIs).", src: "Strategy Process — SP 3.1" },
+      { q: "One, two, three, four \u2014 come on, everyone get on the floor! What is the City's continuous improvement process, used in all 27 departments?", a: "STEP.", src: "OI Process — OIP 1.1" },
+      { q: "No actual walking required! The four letters in STEP represent these four actions for continuous improvement.", a: "Study, Track, Evaluate, Propose.", src: "OI Process — OIP 1.1" },
+      { q: "Don't let good ideas walk out the door! This process helps Team Pharr collect, preserve, and apply organizational knowledge.", a: "The Knowledge Management Process.", src: "OI Process — OIP 2.1" },
+      { q: "Happens quarterly but worth more than any dollar amount \u2014 these meetings with OSE are where departments share progress on STEPs and KPI scorecards!", a: "The Strategic Alignment Session (SAS).", src: "OI Process — OIP 3.1" },
+    ]
+  },
+  {
+    name: "WORKFORCE SYSTEMS",
+    qs: [
+      { q: "No trip to HR required \u2014 this initiative flips the script and sends HR to you, for home-field advantage.", a: "HR's On Your Turf Initiative.", src: "Workforce Process — WP 1.1" },
+      { q: "New to Team Pharr? Congrats \u2014 this person is paired with you and ready to guide you through the City's organizational culture.", a: "A Senior Leader (SL) mentor.", src: "Workforce Process — WP 1.1" },
+      { q: "It ain't no lie, baby, bi, bi, bi-monthly. These sessions with Senior Leaders and OCM keep everyone aligned.", a: "Strategic Alignment Meetings (SAM).", src: "Leadership Process — LP 2.1" },
+      { q: "Pharr has a lot of ways to level up. Name any one of the citywide learning programs.", a: "Pharr U, Pathway to Leadership, or the P.H.A.R.R. Academy (any one correct).", src: "Workforce Process — WP 2.1" },
+      { q: "What process introduces new hires to the City's Mission, Vision, and PRIDE values?", a: "New Employee Orientation.", src: "Workforce Process — WP 1.1" },
+    ]
+  },
+  {
+    name: "OPERATIONS IN ACTION",
+    qs: [
+      { q: "Time to study up! Name one of the four categories that make up every single department's KPI scorecard.", a: "Any of these: Inputs, Outputs, Efficiency, or Effectiveness (any one correct).", src: "Operations Process — OP 1.1" },
+      { q: "We're listening! Surveys, 311, social media, and public meetings all help Team Pharr capture this from our residents.", a: "Voice of the Customer.", src: "Customer Process — CP 1.1" },
+      { q: "This platform is the 'ware' vendors register on to receive bid notifications from the City.", a: "Procureware.", src: "Operations Process — OP 2.1" },
+      { q: "What process manages vendor registration, bidding, and proposals?", a: "The Supply Network Management Process.", src: "Operations Process — OP 2.1" },
+      { q: "Your department launched a new service based on resident feedback. What should you review to determine whether it's actually meeting residents' needs?", a: "KPIs, performance results, customer satisfaction, and feedback.", src: "Operations Process — OP 1.1" },
+    ]
+  },
+];
+
+const BONUS_QS = [
+  { q: "What process turns validated resident requirements into new or improved services, tested through pilots before full rollout?", a: "The Design Process." },
+  { q: "What HR division coordinates the City's four-stage learning and career progression system?", a: "The Workforce Development Division." },
+  { q: "What security framework, built around people, technology, and policies, anchors the City's cybersecurity program?", a: "The NIST security framework." },
+  { q: "What approach gives the City access to capital for short-term needs, disruptions, and long-term goals?", a: "The Three-Part Approach to Capital." },
+  { q: "Extra, extra! The City Manager keeps everyone in the loop with this, four times a year.", a: "The Quarterly CM Newsletter." },
+];
+
+const POINT_VALUES = [100, 200, 300, 400, 500];
+
+// City of Pharr palette — team identity (dot / border / award buttons)
+const TEAM_COLORS = ['#0d1d41','#f3c300','#0010e4','#9bc13c','#81d2e8','#3f4144'];
+// Contrast-safe readable variants for score/name text on dark backgrounds
+const TEAM_TEXT_COLORS = ['#6a98c6','#f3c300','#2faae1','#9bc13c','#81d2e8','#9d9fa2'];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let teams = [];
+let usedTiles = new Set();
+let currentTile = null;
+let audioCtx = null;
+let CATEGORIES = [];
+let lightningIndex = 0;
+let lightningActive = false;
+
+function buildCategoryQuestions() {
+  return CATEGORIES_SRC.map(cat => ({ name: cat.name, qs: cat.qs }));
+}
+
+// ═══════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playTone(freq, type, dur, vol=0.3) {
+  try {
+    const ctx = getAudio();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    o.start(ctx.currentTime); o.stop(ctx.currentTime + dur);
+  } catch(e){}
+}
+function soundReveal()  { playTone(880,'sine',.12); setTimeout(()=>playTone(1100,'sine',.15),100); }
+function soundCorrect() { [523,659,784].forEach((f,i)=>setTimeout(()=>playTone(f,'sine',.18,0.25),i*80)); }
+function soundWrong()   { playTone(180,'sawtooth',.35,0.2); }
+function soundSelect()  { playTone(660,'sine',.1,0.2); }
+function soundBuzz()    { [440,330,220].forEach((f,i)=>setTimeout(()=>playTone(f,'square',.1,0.15),i*60)); }
+
+// ═══════════════════════════════════════════
+// SETUP
+// ═══════════════════════════════════════════
+function newCatStats() {
+  const o = {};
+  CATEGORIES_SRC.forEach(c => o[c.name] = { correct: 0, wrong: 0 });
+  return o;
+}
+function initSetup() {
+  teams = [];
+  addTeam('Team 1'); addTeam('Team 2');
+}
+function addTeam(name) {
+  if (teams.length >= 6) return;
+  teams.push({ name: name || `Team ${teams.length+1}`, score: 0, catStats: newCatStats() });
+  renderSetupTeams();
+  document.getElementById('btn-addteam').disabled = teams.length >= 6;
+}
+function removeTeam(i) {
+  if (teams.length <= 2) return;
+  teams.splice(i,1); renderSetupTeams();
+  document.getElementById('btn-addteam').disabled = false;
+}
+function renderSetupTeams() {
+  const g = document.getElementById('teams-grid');
+  g.innerHTML = '';
+  teams.forEach((t,i) => {
+    const row = document.createElement('div'); row.className = 'team-row';
+    const dot = document.createElement('div'); dot.className = 't-dot';
+    dot.style.background = TEAM_COLORS[i];
+    const inp = document.createElement('input'); inp.className = 't-input';
+    inp.type='text'; inp.value=t.name; inp.placeholder=`Team ${i+1}`;
+    inp.oninput = () => { teams[i].name = inp.value || `Team ${i+1}`; };
+    const rm = document.createElement('button'); rm.className = 't-remove';
+    rm.textContent = '✕'; rm.title = 'Remove';
+    rm.disabled = teams.length <= 2;
+    rm.onclick = () => removeTeam(i);
+    row.append(dot,inp,rm); g.appendChild(row);
+  });
+  document.getElementById('btn-play').disabled = teams.length < 2;
+}
+
+function startGame() {
+  document.querySelectorAll('.t-input').forEach((inp,i)=>{ if(teams[i]) teams[i].name = inp.value||`Team ${i+1}`; });
+  teams.forEach(t=>{ t.score=0; t.catStats = newCatStats(); });
+  usedTiles = new Set();
+  lightningIndex = 0; lightningActive = false;
+  CATEGORIES = buildCategoryQuestions();
+  showScreen('screen-game');
+  buildBoard();
+  updateScoreboard();
+}
+
+// ═══════════════════════════════════════════
+// BOARD
+// ═══════════════════════════════════════════
+function buildBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  CATEGORIES.forEach(cat => {
+    const h = document.createElement('div'); h.className = 'cat-header';
+    h.textContent = cat.name; board.appendChild(h);
+  });
+  POINT_VALUES.forEach((pts, qi) => {
+    CATEGORIES.forEach((cat, ci) => {
+      const key = `${ci}-${qi}`;
+      const tile = document.createElement('div');
+      tile.className = 'tile' + (usedTiles.has(key) ? ' used' : '');
+      tile.dataset.key = key;
+      const val = document.createElement('div'); val.className = 'tile-val';
+      val.textContent = `$${pts}`; tile.appendChild(val);
+      tile.onclick = () => openTile(ci, qi);
+      board.appendChild(tile);
+    });
+  });
+}
+
+function updateScoreboard() {
+  const sb = document.getElementById('scoreboard');
+  sb.innerHTML = '';
+  teams.forEach((t,i) => {
+    const chip = document.createElement('div'); chip.className = 's-chip';
+    const scoreColor = t.score < 0 ? '#ff5a5a' : TEAM_TEXT_COLORS[i];
+    chip.innerHTML = `<div class="s-dot" style="background:${TEAM_COLORS[i]}"></div>
+      <span>${t.name}</span>
+      <strong style="color:${scoreColor}">$${t.score}</strong>`;
+    sb.appendChild(chip);
+  });
+}
+
+// ═══════════════════════════════════════════
+// TILE / MODAL (main board)
+// ═══════════════════════════════════════════
+function openTile(ci, qi) {
+  const key = `${ci}-${qi}`;
+  if (usedTiles.has(key)) return;
+  currentTile = { ci, qi, key, isLightning:false };
+  soundSelect();
+
+  const cat = CATEGORIES[ci];
+  const q = cat.qs[qi];
+  const pts = POINT_VALUES[qi];
+
+  document.getElementById('modal-cat').textContent = cat.name;
+  document.getElementById('modal-pts').textContent = `$${pts}`;
+  document.getElementById('modal-meta').textContent = q.src ? `Source: ${q.src}` : '';
+  document.getElementById('modal-q').textContent = q.q;
+  document.getElementById('modal-answer-text').textContent = q.a;
+  document.getElementById('modal-answer-box').classList.remove('active');
+  document.getElementById('reveal-btn').style.display = '';
+  document.getElementById('award-label').textContent = 'AWARD POINTS TO…';
+  document.getElementById('award-section').classList.remove('active');
+  document.getElementById('btn-noaward').style.display = '';
+
+  buildAwardButtons(pts, true);
+
+  document.getElementById('modal-bg').classList.add('active');
+  soundBuzz();
+}
+
+function buildAwardButtons(pts, allowWrong) {
+  const container = document.getElementById('award-buttons');
+  container.innerHTML = '';
+  teams.forEach((t, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn-award correct';
+    btn.style.borderColor = TEAM_TEXT_COLORS[i];
+    btn.style.color = TEAM_TEXT_COLORS[i];
+    btn.style.background = hexAlpha(TEAM_TEXT_COLORS[i], 0.12);
+    btn.textContent = `✅ ${t.name} +$${pts}`;
+    btn.onclick = () => awardPoints(i, pts, true);
+    container.appendChild(btn);
+  });
+  if (allowWrong) {
+    teams.forEach((t, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'btn-award wrong';
+      btn.textContent = `❌ ${t.name} -$${pts}`;
+      btn.onclick = () => awardPoints(i, -pts, false);
+      container.appendChild(btn);
+    });
+  }
+}
+
+function revealAnswer() {
+  soundReveal();
+  document.getElementById('modal-answer-box').classList.add('active');
+  document.getElementById('reveal-btn').style.display = 'none';
+  document.getElementById('award-section').classList.add('active');
+}
+
+function awardPoints(teamIdx, pts, wasCorrect) {
+  teams[teamIdx].score += pts;
+  if (currentTile && !currentTile.isLightning) {
+    const catName = CATEGORIES[currentTile.ci].name;
+    const stats = teams[teamIdx].catStats[catName];
+    if (wasCorrect) stats.correct++; else stats.wrong++;
+  }
+  if (pts > 0) { soundCorrect(); doFlash('green'); }
+  else { soundWrong(); doFlash('red'); }
+  closeModal(true);
+}
+
+function closeModal(markUsed) {
+  if (markUsed && currentTile && !currentTile.isLightning) {
+    usedTiles.add(currentTile.key);
+    const tile = document.querySelector(`.tile[data-key="${currentTile.key}"]`);
+    if (tile) tile.classList.add('used');
+  }
+  document.getElementById('modal-bg').classList.remove('active');
+  updateScoreboard();
+
+  const wasLightning = currentTile && currentTile.isLightning;
+  currentTile = null;
+
+  if (wasLightning) {
+    lightningIndex++;
+    setTimeout(openLightningQuestion, 500);
+    return;
+  }
+
+  if (usedTiles.size >= CATEGORIES.length * POINT_VALUES.length) {
+    setTimeout(()=>showScreen('screen-lightning'), 600);
+  }
+}
+
+function doFlash(color) {
+  const el = document.getElementById('flash');
+  el.className = 'flash';
+  void el.offsetWidth;
+  el.classList.add('active', color);
+  setTimeout(() => el.classList.remove('active','green','red'), 500);
+}
+
+// ═══════════════════════════════════════════
+// LIGHTNING ROUND
+// ═══════════════════════════════════════════
+function startLightning() {
+  lightningIndex = 0;
+  lightningActive = true;
+  openLightningQuestion();
+}
+
+function openLightningQuestion() {
+  if (lightningIndex >= BONUS_QS.length) {
+    lightningActive = false;
+    setTimeout(showFinal, 400);
+    return;
+  }
+  const q = BONUS_QS[lightningIndex];
+  currentTile = { isLightning:true };
+  soundSelect();
+
+  document.getElementById('modal-cat').textContent = `LIGHTNING FINAL ROUND · ${lightningIndex+1} of ${BONUS_QS.length}`;
+  document.getElementById('modal-pts').textContent = '+200';
+  document.getElementById('modal-meta').textContent = 'Open to all teams — first buzz wins. No penalty for a miss.';
+  document.getElementById('modal-q').textContent = q.q;
+  document.getElementById('modal-answer-text').textContent = q.a;
+  document.getElementById('modal-answer-box').classList.remove('active');
+  document.getElementById('reveal-btn').style.display = '';
+  document.getElementById('award-label').textContent = 'AWARD +200 TO…';
+  document.getElementById('award-section').classList.remove('active');
+  document.getElementById('btn-noaward').textContent = 'No one buzzed in — next clue';
+  document.getElementById('btn-noaward').onclick = () => { closeModal(false); };
+
+  buildAwardButtons(200, false);
+
+  document.getElementById('modal-bg').classList.add('active');
+  soundBuzz();
+}
+
+// ═══════════════════════════════════════════
+// FINAL
+// ═══════════════════════════════════════════
+function showFinal() {
+  showScreen('screen-final');
+  const sorted = [...teams].map((t,i)=>({...t,ci:i})).sort((a,b)=>b.score-a.score);
+  const medals = ['🥇','🥈','🥉'];
+  const pod = document.getElementById('podium');
+  pod.innerHTML = '';
+  sorted.forEach((t, rank) => {
+    const row = document.createElement('div');
+    row.className = `p-row r${rank<3?rank+1:'x'}`;
+    row.style.animationDelay = `${rank*0.12}s`;
+    const scoreColor = t.score < 0 ? '#ff5a5a' : TEAM_TEXT_COLORS[t.ci];
+    row.innerHTML = `
+      <div class="p-medal">${medals[rank]||rank+1+'.'}</div>
+      <div class="p-name" style="color:${TEAM_TEXT_COLORS[t.ci]}">${t.name.toUpperCase()}</div>
+      <div class="p-score" style="color:${scoreColor}">$${t.score}</div>
+      <div class="p-pts">PTS</div>`;
+    pod.appendChild(row);
+  });
+  fireConfetti();
+}
+
+// ═══════════════════════════════════════════
+// PERFORMANCE REVIEW
+// ═══════════════════════════════════════════
+function showReview() {
+  buildReview();
+  showScreen('screen-review');
+}
+
+function buildReview() {
+  const grid = document.getElementById('review-grid');
+  grid.innerHTML = '';
+
+  const sortedTeams = [...teams].map((t,i)=>({...t, ci:i})).sort((a,b)=>b.score-a.score);
+
+  sortedTeams.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'team-review-card';
+    card.style.borderLeftColor = TEAM_COLORS[t.ci];
+
+    const catRows = CATEGORIES_SRC.map(c => {
+      const s = t.catStats[c.name];
+      const total = s.correct + s.wrong;
+      const pct = total ? Math.round((s.correct/total)*100) : null;
+      return { name: c.name, correct: s.correct, wrong: s.wrong, total, pct };
+    });
+
+    const totalCorrect = catRows.reduce((a,c)=>a+c.correct,0);
+    const totalWrong = catRows.reduce((a,c)=>a+c.wrong,0);
+    const totalAttempts = totalCorrect + totalWrong;
+    const overallPct = totalAttempts ? Math.round((totalCorrect/totalAttempts)*100) : null;
+
+    const barsHtml = catRows.map(c => {
+      const barColor = c.pct === null ? null : (c.pct >= 70 ? 'var(--olive)' : c.pct >= 40 ? 'var(--gold)' : '#ff5a5a');
+      const width = c.pct === null ? 100 : Math.max(c.pct, 6);
+      const fillClass = c.pct === null ? 'cat-bar-fill none' : 'cat-bar-fill';
+      const style = c.pct === null ? `width:100%` : `width:${width}%;background:${barColor}`;
+      const countText = c.total ? `${c.correct}/${c.total}` : '—';
+      return `<div class="cat-bar-row">
+        <div class="cat-bar-label">${c.name}</div>
+        <div class="cat-bar-track"><div class="${fillClass}" style="${style}"></div></div>
+        <div class="cat-bar-count">${countText}</div>
+      </div>`;
+    }).join('');
+
+    const attempted = catRows.filter(c => c.total > 0);
+    let recoHtml;
+    if (!attempted.length) {
+      recoHtml = `No categories attempted this game — encourage this team to buzz in early next round.`;
+    } else if (attempted.length === 1) {
+      const c = attempted[0];
+      recoHtml = `Only one category attempted: <b>${c.name}</b> (${c.correct}/${c.total} correct). Encourage this team to spread out across more categories next round for a fuller read.`;
+    } else {
+      const minPct = Math.min(...attempted.map(c=>c.pct));
+      const maxPct = Math.max(...attempted.map(c=>c.pct));
+      if (minPct === maxPct) {
+        const names = attempted.map(c=>c.name).join(', ');
+        if (minPct === 1) {
+          recoHtml = `Perfect run — 100% correct across every category attempted (${names}). No focus area needed; consider stretching into new categories next round.`;
+        } else if (minPct === 0) {
+          recoHtml = `0% across every category attempted (${names}) — worth a full process refresher with this team before the next cascade session.`;
+        } else {
+          recoHtml = `Consistent ${Math.round(minPct*100)}% accuracy across every category attempted (${names}) — no single focus area stands out yet.`;
+        }
+      } else {
+        const weakest = [...attempted].sort((a,b)=> (a.pct-b.pct) || (b.wrong-a.wrong))[0];
+        const strongest = [...attempted].sort((a,b)=> (b.pct-a.pct) || (b.correct-a.correct))[0];
+        recoHtml = `Strongest area: <b>${strongest.name}</b> (${strongest.correct}/${strongest.total} correct). `
+          + `Focus area for next time: <b>${weakest.name}</b> (${weakest.correct}/${weakest.total} correct) — worth a quick review of that process before the next cascade session.`;
+      }
+    }
+
+    card.innerHTML = `
+      <div class="tr-head">
+        <div class="tr-name" style="color:${TEAM_TEXT_COLORS[t.ci]}">${t.name}</div>
+        <div class="tr-score">$${t.score} · <span class="tr-acc">${overallPct===null?'no attempts':overallPct+'% accuracy'}</span></div>
+      </div>
+      <div class="cat-bars">${barsHtml}</div>
+      <div class="tr-reco">${recoHtml}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // Citywide summary — aggregate across all teams
+  const agg = {};
+  CATEGORIES_SRC.forEach(c => agg[c.name] = { correct:0, wrong:0 });
+  teams.forEach(t => {
+    CATEGORIES_SRC.forEach(c => {
+      agg[c.name].correct += t.catStats[c.name].correct;
+      agg[c.name].wrong += t.catStats[c.name].wrong;
+    });
+  });
+  const aggRows = CATEGORIES_SRC.map(c => {
+    const a = agg[c.name];
+    const total = a.correct + a.wrong;
+    return { name: c.name, correct: a.correct, wrong: a.wrong, total, pct: total ? a.correct/total : null };
+  }).filter(r => r.total > 0);
+
+  const cityCard = document.getElementById('citywide-card');
+  if (!aggRows.length) {
+    cityCard.innerHTML = `<h3>CITYWIDE TAKEAWAY</h3><p>No questions were played this game.</p>`;
+  } else {
+    const toughest = [...aggRows].sort((a,b)=>(a.pct-b.pct)||(b.wrong-a.wrong)).slice(0,2);
+    const strongest = [...aggRows].sort((a,b)=>b.pct-a.pct).slice(0,2);
+    cityCard.innerHTML = `
+      <h3>CITYWIDE TAKEAWAY</h3>
+      <p><b style="color:var(--olive)">Best understood tonight:</b> ${strongest.map(r=>`${r.name} (${Math.round(r.pct*100)}%)`).join(', ')}.</p>
+      <p><b style="color:#ff8a8a">Toughest for the room:</b> ${toughest.map(r=>`${r.name} (${Math.round(r.pct*100)}%)`).join(', ')} — worth a refresher in the next cascade or a flyer follow-up.</p>
+    `;
+  }
+}
+
+function restartGame() {
+  document.querySelectorAll('.cp').forEach(e=>e.remove());
+  showScreen('screen-intro'); initSetup();
+}
+
+// ═══════════════════════════════════════════
+// CONFETTI
+// ═══════════════════════════════════════════
+function fireConfetti() {
+  const colors=['#f3c300','#0010e4','#9bc13c','#81d2e8','#2faae1','#f9be29','#ffffff'];
+  for(let i=0;i<100;i++) setTimeout(()=>{
+    const el=document.createElement('div'); el.className='cp';
+    el.style.left=Math.random()*100+'vw'; el.style.top='-15px';
+    el.style.background=colors[Math.floor(Math.random()*colors.length)];
+    el.style.width=(5+Math.random()*9)+'px'; el.style.height=(5+Math.random()*9)+'px';
+    el.style.setProperty('--d',(1.5+Math.random()*2.2)+'s');
+    el.style.borderRadius=Math.random()>.5?'50%':'2px';
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),4000);
+  },i*35);
+}
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function hexAlpha(hex, a) {
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+initSetup();
+</script>
+</body>
+</html>
